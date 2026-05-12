@@ -1,48 +1,37 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-import numpy as np
 
 # ─── FFT Feature Extractor ───────────────────────────────
 class FFTFeatureExtractor(nn.Module):
-    def __init__(self, output_size=128):
-        super(FFTFeatureExtractor, self).__init__()
+    def __init__(self, img_size=224, output_size=256):
+        super().__init__()
+        self.img_size = img_size
         self.fc = nn.Sequential(
-            nn.Linear(32 * 32, 256),
+            nn.Linear(img_size * img_size, 512),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(256, output_size),
+            nn.Linear(512, output_size),
             nn.ReLU()
         )
 
     def forward(self, x):
-        # x shape: (batch, 3, 32, 32)
-        # convert to grayscale by averaging channels
-        gray = x.mean(dim=1)  # (batch, 32, 32)
-
-        # apply FFT
-        fft = torch.fft.fft2(gray)
+        gray      = x.mean(dim=1)
+        fft       = torch.fft.fft2(gray)
         fft_shift = torch.fft.fftshift(fft)
         magnitude = torch.log(torch.abs(fft_shift) + 1)
-
-        # flatten and pass through FC layers
-        magnitude = magnitude.view(magnitude.size(0), -1)  # (batch, 1024)
-        out = self.fc(magnitude)
-        return out
+        magnitude = magnitude.view(magnitude.size(0), -1)
+        return self.fc(magnitude)
 
 
-# ─── EfficientNet Spatial Branch ─────────────────────────
+# ─── Spatial Feature Extractor ───────────────────────────
 class SpatialFeatureExtractor(nn.Module):
-    def __init__(self, output_size=128):
-        super(SpatialFeatureExtractor, self).__init__()
-        # load pretrained EfficientNet-B0
-        efficientnet = models.efficientnet_b0(weights='IMAGENET1K_V1')
-
-        # remove the final classifier
-        self.features = efficientnet.features
-        self.pool = efficientnet.avgpool
-
-        self.fc = nn.Sequential(
+    def __init__(self, output_size=256):
+        super().__init__()
+        eff           = models.efficientnet_b0(weights='IMAGENET1K_V1')
+        self.features = eff.features
+        self.pool     = eff.avgpool
+        self.fc       = nn.Sequential(
             nn.Dropout(0.3),
             nn.Linear(1280, output_size),
             nn.ReLU()
@@ -52,30 +41,30 @@ class SpatialFeatureExtractor(nn.Module):
         x = self.features(x)
         x = self.pool(x)
         x = torch.flatten(x, 1)
-        x = self.fc(x)
-        return x
+        return self.fc(x)
 
 
-# ─── Fusion Classifier ───────────────────────────────────
-class MisinformationDetector(nn.Module):
-    def __init__(self):
-        super(MisinformationDetector, self).__init__()
-        self.spatial_branch = SpatialFeatureExtractor(output_size=128)
-        self.fft_branch = FFTFeatureExtractor(output_size=128)
-
-        # fusion: concatenate both branches (128 + 128 = 256)
-        self.classifier = nn.Sequential(
-            nn.Linear(256, 128),
+# ─── Verifai Detector ────────────────────────────────────
+class VerifaiDetector(nn.Module):
+    def __init__(self, img_size=224):
+        super().__init__()
+        self.spatial_branch = SpatialFeatureExtractor(256)
+        self.fft_branch     = FFTFeatureExtractor(img_size, 256)
+        self.classifier     = nn.Sequential(
+            nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(0.4),
-            nn.Linear(128, 2)  # 2 classes: REAL, FAKE
+            nn.Linear(256, 64),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, 2)
         )
 
     def forward(self, x):
-        spatial_features = self.spatial_branch(x)
-        fft_features = self.fft_branch(x)
+        s = self.spatial_branch(x)
+        f = self.fft_branch(x)
+        return self.classifier(torch.cat([s, f], dim=1))
 
-        # fuse both features
-        combined = torch.cat([spatial_features, fft_features], dim=1)
-        output = self.classifier(combined)
-        return output
+
+# keep old name as alias for backward compatibility
+MisinformationDetector = VerifaiDetector

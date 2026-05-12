@@ -1,0 +1,11 @@
+Upload Image,Prediction,Grad-CAM Heatmap,timestamp
+,"Prediction: **REAL**
+Confidence: 100.00%
+
+REAL probability: 100.00%
+FAKE probability: 0.00%",.gradio\flagged\Grad-CAM Heatmap\8a7363bd7ec75331206e\image.webp,2026-05-09 18:29:46.465283
+,"Prediction: **REAL**
+Confidence: 100.00%
+
+REAL probability: 100.00%
+FAKE probability: 0.00%",.gradio\flagged\Grad-CAM Heatmap\8106395e6d9c0a63d8a8\image.webp,2026-05-09 18:29:48.361707
