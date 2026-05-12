@@ -159,7 +159,7 @@ Gradient-weighted Class Activation Mapping (Grad-CAM) hooks into the last convol
 ## 👨‍💻 Author
 
 **Shabeeb Mohammed Sakir P**
-MSc Applied Data Science, SRMIST Kattankulatham
+MSc Applied Data Science, Kerala,India
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-shabeeb--mohammed--sakir-blue)](https://linkedin.com/in/shabeeb-mohammed-sakir)
 [![GitHub](https://img.shields.io/badge/GitHub-Shabeeb--Mohammed--Sakir--P-black)](https://github.com/Shabeeb-Mohammed-Sakir-P)
